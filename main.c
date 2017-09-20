@@ -8,14 +8,19 @@
 #define VERSION 1.0
 
 void print_info() {
-    char *help = "-h, --help Prints usage information";
-    char *version = "-V, --version Prints version information";
-    char *output = "-o, --output Path to output file";
-
-    printf("%s\n%s\n%s\n%s\n", "Usage:", "erat -h", "erat -V",
+    printf("%s\n%s\n%s\n%s\n",
+           "Usage:",
+           "erat -h",
+           "erat -V",
            "erat [options] N");
-    printf("%s\n%s\n%s\n%s\n", "Options:", help, version, output);
-    printf("%s\n%s\n", "Examples:", "erat -o - 10");
+    printf("%s\n%s\n%s\n%s\n",
+           "Options:",
+           "-h, --help Prints usage information",
+           "-V, --version Prints version information",
+           "-o, --output Path to output file");
+    printf("%s\n%s\n",
+           "Examples:",
+           "erat -o - 10");
 }
 
 void erat(long upper_limit, FILE *file) {
