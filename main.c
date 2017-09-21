@@ -2,6 +2,9 @@
 #include <stdbool.h>
 #include <string.h>
 #include <stdlib.h>
+#include <getopt.h>
+#include <errno.h>
+#include <limits.h>
 
 #define SUCCESS 0
 #define ERROR 1
@@ -23,6 +26,10 @@ void print_info() {
            "erat -o - 10");
 }
 
+void print_version() {
+    printf("%s%.2f\n", "Version: ", VERSION);
+}
+
 void erat(long upper_limit, FILE *file) {
     for (int i = 2; i <= upper_limit; i++) {
         bool is_prime = true;
@@ -38,47 +45,70 @@ void erat(long upper_limit, FILE *file) {
 }
 
 int main(int argc, char **argv) {
-    if (argc == 2) {
-        // -h o -V
-        if (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0) {
-            print_info();
-        } else if (strcmp(argv[1], "-V") == 0 ||
-                   strcmp(argv[1], "--version") == 0) {
-            printf("%s%.2f\n", "Version: ", VERSION);
-        } else {
-            print_info();
-        }
-    } else if (argc == 4) {
-        // 4 argumentos: erat -o -output N
-        if (strcmp(argv[1], "-o") == 0 || strcmp(argv[1], "--output") == 0) {
-            // check range
-            char *endptr;
-            long number = strtol(argv[3], &endptr, 10);
+    int argument;
+    char *input = NULL;
+    FILE *output = NULL;
+    char *lastChar;
+    long number;
+    size_t size;
 
-            if (argv[3] == endptr) {
-                fprintf(
-                    stderr, "%s\n", "Error: número inválido o fuera de rango"
-                );
-                return ERROR;
-            }
+    static struct option options[] =
+        {
+            {"help",    no_argument,       NULL, 'h'},
+            {"version", no_argument,       NULL, 'V'},
+            {"output",  required_argument, NULL, 'o'},
+            {NULL,      no_argument,       NULL, 0}
+        };
 
-            if (strcmp(argv[2], "-") == 0) {
-                //imprimir en stdout
-                erat(number, stdout);
-            } else {
-                //imprimir en file
-                FILE *file = fopen(argv[2], "wb");
-                if (!file) {
-                    fprintf(stderr, "%s\n", "Error al abrir el archivo");
+    argument = getopt_long(argc, argv, "hVo:", options, NULL);
+
+    switch (argument) {
+        case 'h':
+            print_info();
+            return SUCCESS;
+        case 'V':
+            print_version();
+            return SUCCESS;
+        case 'o':
+            if (strcmp(optarg, "-") != 0) {
+                output = fopen(optarg, "wb");
+                if (!output) {
+                    fprintf(stderr,
+                            "The file '%s' could not be created/opened",
+                            optarg);
                     return ERROR;
-                } else {
-                    erat(number, file);
                 }
             }
-        }
-    } else {
-        print_info();
+            if (argc < 4) {
+                fprintf(stderr,
+                        "The number is missing");
+                return ERROR;
+            }
+        default:
+            if (argc < 4) {
+                if (getline(&input, &size, stdin) == -1) { input = NULL; }
+            }
+            number = strtol(input ? input : argv[3], &lastChar, 10);
+            if (errno == ERANGE && (number == LONG_MIN || number == LONG_MAX)) {
+                fprintf(stderr,
+                        "The number is out of range (%d to %li)",
+                        2, LONG_MAX);
+                return ERROR;
+            }
+            if ((input ? input : argv[3]) == lastChar) {
+                fprintf(stderr,
+                        "The number is invalid");
+                return ERROR;
+            }
+            if (number < 2) {
+                fprintf(stderr,
+                        "The number is out of range (%d to %li)",
+                        2, LONG_MAX);
+                return ERROR;
+            }
+            erat(number, output ? output : stdout);
+            if (output) { fclose(output); }
+            if (input) { free(input); }
+            return SUCCESS;
     }
-
-    return SUCCESS;
 }
