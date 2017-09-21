@@ -9,6 +9,7 @@
 #define SUCCESS 0
 #define ERROR 1
 #define VERSION 1.0
+#define NUMBER_OF_DIGITS_IN_LONG_MAX 20
 
 void print_info() {
     printf("%s\n%s\n%s\n%s\n",
@@ -45,13 +46,17 @@ void erat(long upper_limit, FILE *file) {
     }
 }
 
+void print_out_of_range_error() {
+    fprintf(stderr, "The number is out of range (%d to %li)\n", 2, LONG_MAX);
+}
+
 int main(int argc, char **argv) {
     int argument;
-    char *input = NULL;
+    char input[NUMBER_OF_DIGITS_IN_LONG_MAX];
     FILE *output = NULL;
     char *lastChar;
     long number;
-    size_t size;
+    bool readFromStdin = false;
 
     static struct option options[] =
         {
@@ -75,41 +80,40 @@ int main(int argc, char **argv) {
                 output = fopen(optarg, "wb");
                 if (!output) {
                     fprintf(stderr,
-                            "The file '%s' could not be created/opened",
+                            "The file '%s' could not be created/opened\n",
                             optarg);
                     return ERROR;
                 }
             }
             if (argc < 4) {
                 fprintf(stderr,
-                        "The number is missing");
+                        "The number is missing\n");
                 return ERROR;
             }
         default:
             if (argc < 4) {
-                if (getline(&input, &size, stdin) == -1) { input = NULL; }
+                if (!fgets(input, NUMBER_OF_DIGITS_IN_LONG_MAX, stdin)) {
+                    print_out_of_range_error();
+                    return ERROR;
+                }
+                readFromStdin = true;
             }
-            number = strtol(input ? input : argv[3], &lastChar, 10);
+            number = strtol(readFromStdin ? input : argv[3], &lastChar, 10);
             if (errno == ERANGE && (number == LONG_MIN || number == LONG_MAX)) {
-                fprintf(stderr,
-                        "The number is out of range (%d to %li)",
-                        2, LONG_MAX);
+                print_out_of_range_error();
                 return ERROR;
             }
-            if ((input ? input : argv[3]) == lastChar) {
+            if ((readFromStdin ? input : argv[3]) == lastChar) {
                 fprintf(stderr,
-                        "The number is invalid");
+                        "The number is invalid\n");
                 return ERROR;
             }
             if (number < 2) {
-                fprintf(stderr,
-                        "The number is out of range (%d to %li)",
-                        2, LONG_MAX);
+                print_out_of_range_error();
                 return ERROR;
             }
             erat(number, output ? output : stdout);
             if (output) { fclose(output); }
-            if (input) { free(input); }
             return SUCCESS;
     }
 }
