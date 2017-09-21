@@ -31,9 +31,10 @@ void print_version() {
 }
 
 void erat(long upper_limit, FILE *file) {
-    for (int i = 2; i <= upper_limit; i++) {
+    int i, j;
+    for (i = 2; i <= upper_limit; i++) {
         bool is_prime = true;
-        for (int j = 2; j < i && is_prime; j++) {
+        for (j = 2; j < i && is_prime; j++) {
             if (i % j == 0) {
                 is_prime = false;
             }
